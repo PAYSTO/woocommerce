@@ -326,6 +326,7 @@ function woocommerce_paysto()
                 'x_description' => $this->paysto_x_description,
                 'x_login' => $this->paysto_x_login,
                 'x_amount' => $orderAmount,
+                'x_email' => $order->get_billing_email(),
                 'x_currency_code' => $order->get_currency(),
                 'x_fp_sequence' => $order_id,
                 'x_fp_timestamp' => $now,
@@ -341,9 +342,9 @@ function woocommerce_paysto()
             $x_line_item = '';
             foreach ($order->get_items() as $product) {
                 $lineArr = array();
-
+                $productObject = wc_get_product($product->get_product_id());
                 $lineArr[] = '№' . $pos . "  ";
-                $lineArr[] = substr($product['name'], 0, 30);
+                $lineArr[] = substr($productObject->get_sku(), 0, 30);
                 $lineArr[] = substr($product['name'], 0, 254);
                 $lineArr[] = substr($product['quantity'], 0, 254);
                 $lineArr[] = number_format($product['total'] / $product['quantity'], 2, '.',
@@ -359,7 +360,7 @@ function woocommerce_paysto()
                 $lineArr = array();
 
                 $lineArr[] = '№' . $pos . "  ";
-                $lineArr[] = __('Delivery of order #', 'woocommerce') . $order_id;
+                $lineArr[] = __('Delivery ', 'woocommerce') . $order_id;
                 $lineArr[] = __('Delivery of order #', 'woocommerce') . $order_id;
                 $lineArr[] = 1;
                 $lineArr[] = number_format($order->get_shipping_total(), 2, '.', '');
@@ -490,7 +491,7 @@ function woocommerce_paysto()
 
                     if (!isset($_SESSION['paysto_pay'])) {
                         if ($_SESSION['paysto_pay'] != 'success') {
-                            wp_die('Request Failure');
+                            wp_redirect($order->get_cancel_order_url());
                         }
                     } else {
                         session_destroy();
@@ -517,7 +518,7 @@ function woocommerce_paysto()
                     do_action('valid-paysto-standard-request', $_POST);
                     $order->update_status($this->paysto_order_status, __('Payment is successful!', 'woocommerce'));
                 } else {
-                    wp_die('Request Failure');
+                    wp_redirect($order->get_cancel_order_url());
                 }
             } elseif (isset($_GET['paysto']) and $_GET['paysto'] == 'success') {
                 $orderId = $_POST['x_invoice_num'];
